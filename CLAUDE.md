@@ -182,6 +182,32 @@ npm run dev
 3. 创建 P 序列规划文档
 4. 通过 `/slash-taskskill` 执行任务并进行验证
 
+## 系统架构规范与交付
+
+- 输出硬规则
+  - 默认中文，避免空话与宏大叙事，明确取舍与边界
+  - 必须写清验收与指标口径；先输出可评审版本后再迭代
+- 默认交付物
+  - 架构文档：使用 `/.claude/skills/system-architect/reference/architecture-template.md`
+  - ADR：使用 `/.claude/skills/system-architect/reference/adr-template.md`（1–3 条关键决策）
+  - 图：至少两张（系统上下文、关键链路时序或数据流），参考 `/.claude/skills/system-architect/reference/diagram-patterns.md`
+  - 风险清单与灰度回滚方案
+- 工作流清单
+  - 读取输入与边界 → 识别目标与约束（含非功能需求）
+  - 产出 2–3 方案并写清取舍 → 选择推荐方案形成初稿
+  - 写 ADR 固化决策 → 使用 `quality-rubric` 自检 → 输出最终文档并列待确认项
+- 非功能需求基线
+  - SLO 与错误预算；容量与性能假设
+  - 可观测性（日志、指标、链路追踪）
+  - 安全（鉴权、权限、审计）；备份与恢复（RPO/RTO）
+  - 灰度与回滚
+- 参考与校验
+  - 参考：`architecture-template.md`、`adr-template.md`、`question-bank.md`、`quality-rubric.md`、`diagram-patterns.md`
+  - 校验脚本：`python .claude/skills/system-architect/scripts/validate_architecture.py architecture.md`
+- 资产治理对齐
+  - 架构产出草稿写入 `.agent/outputs/docs/`；在 `.agent/manifests/` 登记输入/输出/哈希
+  - 相关日志写入 `.agent/logs/`，遵循路径安全与脱敏规范
+
 ## 关键架构原则
 
 - 规范驱动：所有开发必须从文档化的规格开始
