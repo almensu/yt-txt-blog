@@ -5,6 +5,7 @@
 
 // Core data types
 export * from './video.types';
+export * from './blog.types';
 export * from './api.types';
 export * from './config.types';
 export * from './error.types';
