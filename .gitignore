@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+src/frontend/node_modules/
+
+# Claude Code workspace
+.claude/
+.agent/
+
+# Build outputs
+dist/
+src/frontend/dist/
+*.tsbuildinfo
+
+# Environment variables (sensitive)
+.env
+.env.local
+.env.*.local
+src/frontend/.env.local
+
+# Logs
+logs/
+*.log
+storage/logs/
+
+# Runtime data & downloads
+storage/downloads/
+storage/processed/
+storage/temp/
+data/
+
+# Coverage & testing
+coverage/
+.nyc_output/
+
+# IDE & Editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-*
+
+# Temporary files
+*.tmp
+.trae/
+
+# Temporary integration test files
+test-*.js
+
+# OS
+Thumbs.db
