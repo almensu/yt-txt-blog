@@ -50,3 +50,4 @@ test-*.js
 
 # OS
 Thumbs.db
+project_data/
