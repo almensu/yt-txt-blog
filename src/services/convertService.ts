@@ -1,9 +1,13 @@
 /**
  * Convert Service
- * Business logic layer for converting TXT assets to styled articles using Zhipu AI
+ * Business logic layer for converting TXT assets to styled articles
+ * Uses OpenAI SDK for multiple AI providers: Zhipu AI, Gemini, and OpenAI
+ * Supports thinking mode for Zhipu GLM-4.7
  */
 
-import { zhipuClient, DEFAULT_MODEL, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '../config/zhipu.js';
+import type OpenAI from 'openai';
+import { aiClientManager, DEFAULT_MAX_TOKENS } from '../config/ai.js';
+import type { AIProvider } from '../config/ai.js';
 import { assetStorage } from '../storage/assetStorage.js';
 import { articleStorage } from '../storage/articleStorage.js';
 import { styleService } from './styleService.js';
@@ -56,37 +60,70 @@ export class ConvertService {
     // Build prompt from template
     const prompt = style.prompt_template.replace('{content}', asset.content);
 
-    // Call Zhipu AI
-    const response = await zhipuClient.chat.completions.create({
-      model: request.model || DEFAULT_MODEL,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      max_tokens: DEFAULT_MAX_TOKENS,
-      temperature: DEFAULT_TEMPERATURE,
-    });
+    // Determine provider
+    const provider = this.determineProvider(request);
+
+    // Build messages array (supports multi-turn conversation)
+    const messages: OpenAI.ChatCompletionMessageParam[] = [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ];
+
+    // Create chat completion using aiClientManager
+    const response = await aiClientManager.createChatCompletion(
+      provider,
+      messages,
+      {
+        model: request.model,
+        max_tokens: DEFAULT_MAX_TOKENS,
+        temperature: request.temperature ?? 0.7,
+        thinking_enabled: request.thinking_enabled,
+      }
+    );
 
     const generatedContent = response.choices[0]?.message?.content || '';
     if (!generatedContent) {
       throw new Error('Failed to generate article content');
     }
 
-    // Create article record
+    // Create article record with provider info
     const article = await articleStorage.create({
       asset_id: asset.id,
       asset_title: asset.title,
       style_id: style.id,
       style_name: style.name,
       content: generatedContent,
-      model: request.model || DEFAULT_MODEL,
+      provider,
+      model: response.model,
       prompt_tokens: response.usage?.prompt_tokens,
       completion_tokens: response.usage?.completion_tokens,
     });
 
     return article;
+  }
+
+  /**
+   * Determine which provider to use
+   */
+  private determineProvider(request: ConvertRequest): AIProvider {
+    // If provider is specified in request, use it
+    if (request.provider) {
+      return request.provider as AIProvider;
+    }
+
+    // Auto-determine: prefer Zhipu, then Gemini, then OpenAI
+    const available = aiClientManager.getAvailableProviders();
+    if (available.includes('zhipu')) {
+      return 'zhipu';
+    } else if (available.includes('gemini')) {
+      return 'gemini';
+    } else if (available.includes('openai')) {
+      return 'openai';
+    }
+
+    throw new Error('No AI provider available. Please set ZHIPU_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY environment variable.');
   }
 
   /**
