@@ -6,6 +6,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../backend/utils/logger.js';
 import type { TxtAsset, CreateAssetRequest, UpdateAssetRequest } from '../types/index.js';
 
 const ASSETS_DIR = path.join(process.cwd(), 'project_data', 'assets');
@@ -35,13 +36,40 @@ export class AssetStorage {
 
   /**
    * Load asset index from disk
+   * Loads complete asset data including content from individual files
    */
   private async loadIndex(): Promise<void> {
     try {
+      // First, load the index file to get list of assets
       const data = await fs.readFile(INDEX_FILE, 'utf-8');
-      const assets: TxtAsset[] = JSON.parse(data);
+      const parsed = JSON.parse(data);
+
+      // Handle both formats: direct array [{...}] or wrapped {assets: [{...}]}
+      let indexAssets: TxtAsset[];
+      if (Array.isArray(parsed)) {
+        indexAssets = parsed;
+      } else if (parsed && Array.isArray(parsed.assets)) {
+        indexAssets = parsed.assets;
+      } else {
+        logger.warn(`Invalid index format, starting fresh`);
+        return;
+      }
+
       this.assets.clear();
-      assets.forEach((asset) => this.assets.set(asset.id, asset));
+
+      // Load complete asset data from individual files
+      for (const indexAsset of indexAssets) {
+        try {
+          const filepath = path.join(ASSETS_DIR, `${indexAsset.id}.json`);
+          const fileData = await fs.readFile(filepath, 'utf-8');
+          const fullAsset: TxtAsset = JSON.parse(fileData);
+          this.assets.set(fullAsset.id, fullAsset);
+        } catch (fileError) {
+          // If individual file is missing, use index data (without content)
+          logger.warn(`Asset file missing for ${indexAsset.id}, using index data`);
+          this.assets.set(indexAsset.id, indexAsset);
+        }
+      }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error;
@@ -83,6 +111,11 @@ export class AssetStorage {
       content: data.content,
       created_at: now,
       updated_at: now,
+      // P02: Optional metadata fields
+      source_video_id: data.source_video_id,
+      source_video_title: data.source_video_title,
+      source_language: data.source_language,
+      source_type: data.source_type,
     };
 
     // Save to individual file
