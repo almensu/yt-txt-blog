@@ -12,6 +12,11 @@ export interface TxtAsset {
   content: string;
   created_at: string;
   updated_at: string;
+  // P02: YouTube metadata
+  source_video_id?: string;
+  source_video_title?: string;
+  source_language?: string;
+  source_type?: 'youtube' | 'manual';
 }
 
 export interface StyleConfig {
@@ -28,7 +33,8 @@ export interface GeneratedArticle {
   style_name: string;
   content: string;
   created_at: string;
-  model: string;
+  provider?: 'zhipu' | 'gemini' | 'openai' | 'deepseek' | 'ollama';
+  model?: string;
 }
 
 export interface CreateAssetRequest {
@@ -39,7 +45,109 @@ export interface CreateAssetRequest {
 export interface ConvertRequest {
   asset_id: string;
   style_id: string;
+  provider?: 'zhipu' | 'gemini' | 'openai' | 'deepseek' | 'ollama';
   model?: string;
+  thinking_enabled?: boolean; // Enable thinking mode (Zhipu GLM-4.7 only)
+  temperature?: number; // 0-1, default 0.7
+}
+
+// AI Provider types
+export type AIProvider = 'zhipu' | 'gemini' | 'openai' | 'deepseek' | 'ollama';
+
+export interface AIProviderConfig {
+  id: AIProvider;
+  name: string;
+  description: string;
+  models: string[];
+  defaultModel: string;
+  supportsThinking: boolean; // Supports thinking mode
+}
+
+// Available AI providers
+export const AI_PROVIDERS: AIProviderConfig[] = [
+  {
+    id: 'zhipu',
+    name: '智谱 AI (Zhipu)',
+    description: '国产大模型，支持 GLM-4 系列',
+    models: ['glm-4.7', 'glm-4.6'],
+    defaultModel: 'glm-4.7',
+    supportsThinking: true, // GLM-4.7 supports thinking mode
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    description: 'Google Gemini 2.5 系列模型',
+    models: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+    defaultModel: 'gemini-2.5-flash',
+    supportsThinking: false,
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI (GPT)',
+    description: 'OpenAI GPT 系列模型',
+    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    defaultModel: 'gpt-4o-mini',
+    supportsThinking: false,
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    description: 'DeepSeek V3 开源模型',
+    models: ['deepseek-chat', 'deepseek-reasoner'],
+    defaultModel: 'deepseek-chat',
+    supportsThinking: false,
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama (本地模型)',
+    description: '本地运行的开源模型，需要 Ollama 服务',
+    models: ['qwen2.5:7b', 'deepseek-r1:8b', 'deepseek-r1:14b', 'qwen3:14b', 'gemma3n:latest'],
+    defaultModel: 'qwen2.5:7b',
+    supportsThinking: false,
+  },
+];
+
+// P02: YouTube Integration Types
+export interface VideoProcess {
+  videoId: string;
+  title: string;
+  status: 'pending' | 'downloading' | 'processing' | 'completed' | 'failed';
+  downloadedLanguages: string[];
+  processedLanguages: string[];
+  importedAssetIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface YouTubeDownloadRequest {
+  url: string;
+  languages?: string[];
+}
+
+export interface YouTubeDownloadResponse {
+  videoId: string;
+  title: string;
+  duration: number;
+  uploader: string;
+  uploadDate: string;
+  thumbnailUrl: string;
+  availableSubtitles: string[];
+  downloadedLanguages: string[];
+  downloadPath: string;
+}
+
+export interface YouTubeProcessRequest {
+  videoId: string;
+  language: string;
+}
+
+export interface ProcessWithImportResponse {
+  videoId: string;
+  title: string;
+  language: string;
+  processedTextPath: string;
+  importedAssetId: string;
+  asset: TxtAsset;
 }
 
 /**
@@ -156,6 +264,39 @@ export const api = {
       if (!res.ok) throw new Error('Failed to delete article');
     },
   },
-};
 
-export type { TxtAsset, StyleConfig, GeneratedArticle, CreateAssetRequest, ConvertRequest };
+  // P02: YouTube Integration
+  youtube: {
+    async download(request: YouTubeDownloadRequest): Promise<YouTubeDownloadResponse> {
+      const res = await fetch(`${API_BASE}/youtube/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Download failed');
+      }
+      return res.json();
+    },
+
+    async process(request: YouTubeProcessRequest): Promise<ProcessWithImportResponse> {
+      const res = await fetch(`${API_BASE}/youtube/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Processing failed');
+      }
+      return res.json();
+    },
+
+    async listVideos(): Promise<{ videos: VideoProcess[]; total: number }> {
+      const res = await fetch(`${API_BASE}/youtube/videos`);
+      if (!res.ok) throw new Error('Failed to fetch videos');
+      return res.json();
+    },
+  },
+};

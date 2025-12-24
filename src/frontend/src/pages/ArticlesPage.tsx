@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../stores/useStore';
 import { api } from '../services/api';
+import { createToast } from '../components/Toast';
 import type { GeneratedArticle } from '../services/api';
 
 export function ArticlesPage() {
-  const { articles, setArticles, removeArticle, setLoading, setError } = useStore();
+  const { articles, setArticles, removeArticle, addToast } = useStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -13,14 +14,10 @@ export function ArticlesPage() {
 
   async function loadArticles() {
     try {
-      setLoading(true);
-      setError(null);
       const data = await api.articles.getAll();
       setArticles(data);
     } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      addToast(createToast(err instanceof Error ? err.message : 'Failed to load articles', 'error'));
     }
   }
 
@@ -30,8 +27,9 @@ export function ArticlesPage() {
       await api.articles.delete(id);
       removeArticle(id);
       if (expandedId === id) setExpandedId(null);
+      addToast(createToast('Article deleted successfully', 'success'));
     } catch (err) {
-      setError((err as Error).message);
+      addToast(createToast(err instanceof Error ? err.message : 'Failed to delete article', 'error'));
     }
   }
 
@@ -39,7 +37,10 @@ export function ArticlesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">生成的文章</h1>
-        <button onClick={loadArticles} className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+        <button
+          onClick={loadArticles}
+          className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+        >
           刷新
         </button>
       </div>
@@ -53,21 +54,23 @@ export function ArticlesPage() {
           {articles.map((article: GeneratedArticle) => (
             <div key={article.id} className="bg-white rounded-lg shadow overflow-hidden">
               <div
-                className="p-6 cursor-pointer hover:bg-gray-50"
+                className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
                 onClick={() => setExpandedId(expandedId === article.id ? null : article.id)}
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-medium text-gray-900">{article.asset_title}</h3>
-                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h3 className="text-lg font-medium text-gray-900 truncate">{article.asset_title}</h3>
+                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded whitespace-nowrap">
                         {article.style_name}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-gray-500">
                       创建于: {new Date(article.created_at).toLocaleString('zh-CN')}
                     </p>
-                    <p className="text-xs text-gray-400">模型: {article.model}</p>
+                    <p className="text-xs text-gray-400">
+                      模型: {article.provider ? `${article.provider}/${article.model}` : (article.model || 'N/A')}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -75,7 +78,7 @@ export function ArticlesPage() {
                         e.stopPropagation();
                         setExpandedId(expandedId === article.id ? null : article.id);
                       }}
-                      className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                      className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       {expandedId === article.id ? '收起' : '展开'}
                     </button>
@@ -84,7 +87,7 @@ export function ArticlesPage() {
                         e.stopPropagation();
                         handleDelete(article.id);
                       }}
-                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       删除
                     </button>
