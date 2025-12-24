@@ -11,12 +11,15 @@ import compression from 'compression';
 import { assetService } from './services/assetService.js';
 import { styleService } from './services/styleService.js';
 import { articleStorage } from './storage/articleStorage.js';
+import { chatService } from './services/chatService.js';
 import assetsRouter from './routes/assets.js';
 import stylesRouter from './routes/styles.js';
 import convertRouter from './routes/convert.js';
 import articlesRouter from './routes/articles.js';
+import youtubeRouter from './routes/youtube.js';
+import chatRouter from './routes/chat.js';
 
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = parseInt(process.env.NEW_SYSTEM_PORT || '3000', 10);
 const HOST = process.env.HOST || 'localhost';
 
 // Create Express app
@@ -49,6 +52,10 @@ app.use('/api/assets', assetsRouter);
 app.use('/api/styles', stylesRouter);
 app.use('/api/convert', convertRouter);
 app.use('/api/articles', articlesRouter);
+// P02: YouTube integration routes
+app.use('/api/youtube', youtubeRouter);
+// Chat routes
+app.use('/api/chat', chatRouter);
 
 // 404 handler
 app.use((_req, res) => {
@@ -73,6 +80,7 @@ async function startServer() {
     await assetService.initialize();
     await styleService.initialize();
     await articleStorage.initialize();
+    await chatService.initialize();
 
     // Start listening
     app.listen(PORT, () => {
