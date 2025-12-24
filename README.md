@@ -1,71 +1,80 @@
-# YouTube to Pure Text Generator
+# YouTube to Styled Blog Generator
 
-一个本地化工具，能够从YouTube视频URL获取字幕，通过Python清洗脚本生成纯文本，提供简易前端界面进行操作和预览。
+一个本地化工具，从YouTube视频获取字幕，自动生成纯文本资产，并提供风格化转换功能生成博客文章。
 
 ## 🎯 核心功能
 
-- **YouTube内容获取**: 使用yt-dlp下载JSON3字幕格式
-- **字幕处理**: Python清洗脚本移除时间戳和格式标记
-- **简易前端界面**: 输入URL、下载、预览TXT文档
-- **本地存储**: JSON3和TXT文件本地存储
-- **系统集成**: 前后端完整集成测试
+### P01: TXT资产风格化系统
+- **资产创建**: 手动创建和管理TXT资产
+- **风格管理**: 管理多种写作风格配置
+- **风格转换**: 使用AI将TXT资产转换为风格化文章
+- **文章管理**: 查看、删除生成的文章
+
+### P02: YouTube集成系统 (NEW)
+- **YouTube内容获取**: 使用yt-dlp下载字幕
+- **自动导入**: 字幕处理后自动导入为TXT资产
+- **元数据保留**: 保留视频ID、标题、语言等元数据
+- **4步工作流**: URL输入 → 字幕下载 → 处理导入 → 风格转换
 
 ## 🏗️ 技术架构
 
 ### 后端 (TypeScript + Express.js)
 - **框架**: Express.js
-- **语言**: TypeScript (严格模式)
+- **语言**: TypeScript (ES2022)
 - **YouTube下载**: yt-dlp命令行工具
 - **清洗脚本**: Python 3.x
 - **日志**: Winston
-- **测试**: Jest + Supertest
 
-### 前端 (待定)
-- **框架**: React 或 Vue.js (待确定)
-- **构建工具**: Vite 或 Webpack
-- **UI组件**: 轻量级，自定义组件为主
+### 前端 (React + Vite)
+- **框架**: React 18 + TypeScript
+- **构建工具**: Vite
+- **状态管理**: Zustand
+- **路由**: React Router v6
+- **样式**: Tailwind CSS
 
-### 开发工具
-- **代码质量**: ESLint + Prettier
-- **类型检查**: TypeScript严格模式
-- **测试**: Jest (单元测试 + 集成测试)
-- **构建**: TypeScript编译器
+### 端口配置
+| 系统 | 端口 | 环境变量 |
+|------|------|---------|
+| 后端API | 3000 | NEW_SYSTEM_PORT |
+| 前端开发 | 5173 | (Vite default) |
 
 ## 📁 项目结构
 
 ```
 yt-txt-blog-v0.2/
 ├── src/
-│   ├── shared/                 # 共享类型和工具
-│   │   ├── types/             # TypeScript类型定义
-│   │   ├── enums/             # 枚举定义
-│   │   ├── utils/             # 工具函数
-│   │   └── tests/             # 共享测试
-│   ├── backend/               # 后端代码
+│   ├── backend/               # YouTube处理服务 (port 8000)
+│   │   ├── index.ts          # Express服务器
 │   │   ├── controllers/       # 控制器
-│   │   ├── services/          # 业务逻辑
-│   │   ├── models/            # 数据模型
-│   │   ├── routes/            # 路由定义
-│   │   ├── middleware/        # 中间件
-│   │   ├── config/            # 配置文件
-│   │   ├── utils/             # 工具函数
-│   │   └── tests/             # 后端测试
-│   └── frontend/              # 前端代码
-│       ├── src/               # 前端源码
-│       ├── public/            # 静态资源
-│       └── dist/              # 构建输出
-├── .agent/                    # Claude Code工作区
-│   ├── specs/                 # 技术规格文档
-│   ├── planning/              # 项目规划
-│   └── memory/                # 活动上下文
-├── storage/                   # 本地存储
-│   ├── downloads/             # 下载的字幕文件
-│   ├── processed/             # 处理后的文本
-│   ├── temp/                  # 临时文件
-│   └── logs/                  # 日志文件
-├── scripts/                   # Python清洗脚本
-├── docs/                      # 项目文档
-└── tests/                     # 端到端测试
+│   │   └── services/          # 业务逻辑
+│   ├── routes/               # API路由
+│   │   ├── assets.ts         # 资产CRUD
+│   │   ├── styles.ts         # 风格管理
+│   │   ├── convert.ts        # 风格转换
+│   │   └── youtube.ts        # YouTube集成 (P02)
+│   ├── services/             # 业务服务
+│   │   ├── importService.ts  # 自动导入服务 (P02)
+│   │   └── assetStorage.ts   # 资产存储
+│   ├── storage/              # 数据存储
+│   │   └── assetStorage.ts   # JSON文件存储
+│   ├── types/                # TypeScript类型
+│   ├── server.ts             # 主服务器 (port 3000)
+│   └── frontend/             # React前端
+│       └── src/
+│           ├── pages/        # 页面组件
+│           ├── components/   # UI组件
+│           ├── stores/       # Zustand状态
+│           └── services/     # API客户端
+├── storage/                  # 本地存储
+│   ├── downloads/           # 下载的字幕
+│   ├── processed/           # 处理后的文本
+│   └── logs/                # 日志文件
+├── project_data/            # 资产数据
+│   ├── assets/             # TXT资产
+│   ├── articles/           # 生成的文章
+│   └── styles/             # 风格配置
+├── .agent/                 # Claude Code工作区
+└── docs/                   # 项目文档
 ```
 
 ## 🚀 快速开始
@@ -94,6 +103,26 @@ cp .env.example .env
 # 编辑 .env 文件配置相关参数
 ```
 
+### 环境变量配置
+
+```bash
+# 端口配置
+PORT=8000                    # YouTube处理服务端口 (旧系统)
+NEW_SYSTEM_PORT=3000         # 新系统API端口
+
+# 存储路径
+STORAGE_BASE_PATH=./storage
+PROJECT_DATA_BASE=./project_data
+
+# Python配置
+PYTHON_PATH=python3
+CLEANING_SCRIPT_PATH=./scripts/clean_subtitle.py
+
+# yt-dlp配置
+YT_DLP_PATH=yt-dlp
+YT_DLP_TIMEOUT=120000
+```
+
 4. **安装yt-dlp**
 ```bash
 # macOS
@@ -102,147 +131,164 @@ brew install yt-dlp
 # Ubuntu/Debian
 sudo apt install yt-dlp
 
-# Windows (使用pip)
-pip install yt-dlp
-
-# 或者使用Python
+# 使用pip
 pip install yt-dlp
 ```
 
-5. **启动开发服务器**
+5. **启动服务**
 ```bash
-# 同时启动前后端开发服务器
-npm run dev
+# 启动后端服务
+npm start
 
-# 或者分别启动
-npm run dev:backend  # 仅启动后端
-npm run dev:frontend # 仅启动前端
+# 或开发模式
+npm run dev:backend
 ```
 
-6. **访问应用**
+6. **启动前端**
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+
+7. **访问应用**
 - 前端界面: http://localhost:5173
 - 后端API: http://localhost:3000
 - 健康检查: http://localhost:3000/health
 
-## 📋 可用命令
+## 📝 使用指南
 
-```bash
-# 开发
-npm run dev              # 启动前后端开发服务器
-npm run dev:backend      # 仅启动后端
-npm run dev:frontend     # 仅启动前端
+### YouTube集成工作流 (P02)
 
-# 构建
-npm run build            # 构建前后端
-npm run build:backend    # 仅构建后端
-npm run build:frontend   # 仅构建前端
+1. **输入YouTube URL**
+   - 访问 YouTube 页面
+   - 输入YouTube视频URL
+   - 选择字幕语言
 
-# 生产
-npm start                # 启动生产服务器
+2. **下载字幕**
+   - 点击下载按钮
+   - 系统使用yt-dlp下载字幕
+   - 下载完成后显示视频信息
 
-# 测试
-npm test                 # 运行所有测试
-npm run test:watch       # 监视模式运行测试
-npm run test:coverage    # 生成测试覆盖率报告
+3. **处理和导入**
+   - 点击"Process & Import"按钮
+   - Python脚本清洗字幕数据
+   - 自动创建TXT资产（包含视频元数据）
 
-# 代码质量
-npm run lint             # 运行ESLint检查
-npm run lint:fix         # 自动修复ESLint错误
-npm run type-check       # TypeScript类型检查
+4. **风格转换**
+   - 跳转到Convert页面
+   - 选择新创建的资产
+   - 选择写作风格
+   - 生成风格化文章
 
-# 清理
-npm run clean            # 清理构建文件
-npm run clean:all        # 清理所有文件和依赖
+### 手动资产管理 (P01)
+
+1. **创建资产**
+   - 访问 Assets 页面
+   - 输入标题和内容
+   - 点击创建
+
+2. **风格转换**
+   - 访问 Convert 页面
+   - 选择资产和风格
+   - 生成文章
+
+3. **查看文章**
+   - 访问 Articles 页面
+   - 展开/收起查看内容
+   - 删除不需要的文章
+
+## 🔌 API文档
+
+### YouTube集成 (P02)
+
+#### 下载字幕
+```http
+POST /api/youtube/download
+Content-Type: application/json
+
+{
+  "url": "https://www.youtube.com/watch?v=xxx",
+  "languages": ["en", "zh"]
+}
+```
+
+#### 处理和导入
+```http
+POST /api/youtube/process
+Content-Type: application/json
+
+{
+  "videoId": "xxx",
+  "language": "en"
+}
+```
+
+#### 列出已处理视频
+```http
+GET /api/youtube/videos
+```
+
+### 资产管理 (P01)
+
+#### 获取所有资产
+```http
+GET /api/assets
+```
+
+#### 创建资产
+```http
+POST /api/assets
+Content-Type: application/json
+
+{
+  "title": "资产标题",
+  "content": "资产内容",
+  "source_video_id": "xxx",      // 可选
+  "source_video_title": "xxx",   // 可选
+  "source_language": "en",        // 可选
+  "source_type": "youtube"        // 可选
+}
+```
+
+### 风格转换
+
+#### 转换资产
+```http
+POST /api/convert
+Content-Type: application/json
+
+{
+  "asset_id": "asset-uuid",
+  "style_id": "style-name",
+  "model": "gpt-4"  // 可选
+}
 ```
 
 ## 🧪 测试
 
-### 运行测试
 ```bash
 # 运行所有测试
 npm test
 
-# 监视模式
-npm run test:watch
+# 类型检查
+npm run type-check
 
-# 生成覆盖率报告
-npm run test:coverage
+# 构建验证
+npm run build
 ```
 
-### 测试覆盖率要求
-- 全局覆盖率: > 70%
-- 分支覆盖率: > 70%
-- 函数覆盖率: > 70%
-- 行覆盖率: > 70%
-
-## 📝 API文档
-
-### 健康检查
-```
-GET /health
-```
-
-### 视频信息
-```
-GET /api/video/info?url={YOUTUBE_URL}
-```
-
-### 字幕下载
-```
-POST /api/subtitles/download
-```
-
-### 字幕处理
-```
-POST /api/subtitles/process
-```
-
-### 文件预览
-```
-GET /api/files/preview/{fileId}
-```
-
-### 系统状态
-```
-GET /api/system/status
-```
-
-## 🔧 配置
-
-主要配置项在 `.env` 文件中：
-
-- **端口配置**: `PORT`, `HOST`
-- **yt-dlp配置**: `YT_DLP_PATH`, `YT_DLP_TIMEOUT`
-- **存储配置**: `STORAGE_BASE_PATH`, `STORAGE_MAX_SIZE`
-- **处理配置**: `PYTHON_PATH`, `CLEANING_SCRIPT_PATH`
-- **日志配置**: `LOG_LEVEL`, `LOG_TO_FILE`
-
-详细配置说明请参考 `.env.example` 文件。
-
-## 🤝 开发指南
-
-### 代码规范
-- 使用TypeScript严格模式
-- 遵循ESLint和Prettier配置
-- 编写单元测试，保持测试覆盖率
-- 使用语义化的Git提交信息
-
-### 提交规范
-```bash
-feat: 新功能
-fix: 修复bug
-docs: 文档更新
-style: 代码格式调整
-refactor: 代码重构
-test: 测试相关
-chore: 构建过程或辅助工具的变动
-```
-
-### 分支策略
-- `main`: 生产环境代码
-- `develop`: 开发环境代码
-- `feature/*`: 功能开发分支
-- `hotfix/*`: 紧急修复分支
+## Stop Hook 自动运行测试
+- 目的：在任务停止或阶段收尾时自动触发测试，保障验收闭环的一致性
+- 路径建议：`.claude/hooks/stop-hook.sh`
+- 执行逻辑：
+  - 若 `package.json` 存在且包含 `test` 脚本：执行 `npm test`
+  - 否则：执行 `bash .claude/skills/project-architect/scripts/verify_gate.sh`
+- 日志与资产：
+  - 日志写入 `.agent/logs/diagnose/stop-<YYYY-MM-DD>.log`
+  - 产物写入 `.agent/outputs/text/`，并登记 `.agent/manifests/`
+- 安全与约束：拒绝路径穿越；禁止写入项目根与 `src/`
+- 集成点：在 Phase 4 施工循环的收尾与 Phase 5 验收前触发
 
 ## 📄 许可证
 
